@@ -394,4 +394,4 @@ It's important to ensure that you have Docker Compose installed on your system b
 6. The application is deployed on port `8181` and the mentioned curls can be used
    previously
 
-
+## Invitation link to member postman for view definition of service https://app.getpostman.com/join-team?invite_code=70a9c2152d37f7c2674f2e3f4460b7c6&target_code=ff8e21e23d683051d2a210345120234a
