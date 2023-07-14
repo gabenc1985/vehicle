@@ -1,0 +1,18 @@
+package ec.pichincha.challenge.domain.models.api;
+
+import ec.pichincha.challenge.domain.models.enums.CryptocurrencyEnum;
+import lombok.*;
+
+import java.io.Serializable;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+@Generated
+public class RequestGenerateQuoteApiModel implements Serializable {
+
+    private String model;
+    private CryptocurrencyEnum cryptocurrency;
+
+}

@@ -1,0 +1,38 @@
+version: '3.8'
+services:
+  redis:
+    image: "redis/redis-stack:latest"
+    ports:
+      - "26379:6379"
+    container_name : redis-tmp
+    networks:
+      - vehicle
+    environment:
+      - REDIS_REPLICATION_MODE=master
+      - ALLOW_EMPTY_PASSWORD=yes
+  database:
+    image: 'postgres:15.2'
+    ports:
+      - '25432:5432'
+    container_name : database-tmp
+    networks:
+      - vehicle
+    environment:
+      - 'POSTGRES_USER=myuser'
+      - 'POSTGRES_DB=mydatabase'
+      - 'POSTGRES_PASSWORD=secret'
+  flyway:
+    image: flyway/flyway:latest
+    depends_on:
+      - database
+    networks:
+      - vehicle
+    volumes:
+      - ./db/migrations:/flyway/sql
+    environment:
+      - FLYWAY_URL=jdbc:postgresql://database-tmp:5432/mydatabase
+      - FLYWAY_USER=myuser
+      - FLYWAY_PASSWORD=secret
+    command: migrate
+networks:
+  vehicle:

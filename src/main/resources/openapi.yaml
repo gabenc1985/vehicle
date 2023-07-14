@@ -1,0 +1,311 @@
+openapi: 3.0.0
+info:
+  contact:
+    email: gbenavic@emeal.nttdata.com
+  description: |
+    Permite convertir el precio de distintos modelos de vehículos, expresado en dólares, a su equivalente en distintas criptomonedas..
+  title: Vehicle Quote Converter
+  version: 1.0.0
+servers:
+  - description: SwaggerHub API Auto Mocking
+    url: http://localhost:8081/vehicle/
+tags:
+  - description: ''
+    name: Quote
+
+  - description: ''
+    name: Report
+
+paths:
+  /v1/quotes/generate:
+    post:
+      description: "Proporciona una lista de versiones para un modelo específico de\
+        \ vehículo, mostrando el nombre de la versión, el año del vehículo y su precio\
+        \ tanto en dólares como en la criptomoneda seleccionada. Las criptomonedas\
+        \ admi;das para la conversión son Bitcoin (BTC), Ethereum (ETH)."
+      operationId: postGenerateQuote
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestGenerateQuote'
+        description: order placed for purchasing the pet
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseGenerateQuote'
+          description: successful operation
+        "400":
+          description: Invalid Order
+      summary: Genera una cotización basado en el modelo del vehiculo y criptomoneda.
+      tags:
+        - Quote
+      x-content-type: application/json
+      x-accepts: application/json
+      x-tags:
+        - tag: vehicle
+
+  /v1/quotes/save:
+    post:
+      description: "Permite la realización de una compra utilizando la conversión\
+        \ de criptomoneda generada. La información de la compra (la conversión, el\
+        \ nombre del cliente y la fecha de compra)."
+      operationId: postSaveQuote
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestSaveQuote'
+        description: Información de la orden a ser registrada
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseSaveQuote'
+          description: successful operation
+        "400":
+          description: Invalid Order
+
+      summary: Registra una orden basado en una cotización .
+      tags:
+        - Quote
+      x-content-type: application/json
+      x-accepts: application/json
+      x-tags:
+        - tag: vehicle
+
+  /v1/reports/generate:
+    post:
+      description: "Generará un reporte en formato JSON que mostrará el total de ventas diarias de un modelo o versión específica de vehículo, en dólares y en la criptomoneda seleccionada."
+      operationId: postGenerateReport
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestGenerateReport'
+        description: "Generará un reporte en formato JSON que mostrará el total de ventas diarias de un modelo o versión específica de vehículo, en dólares y en la criptomoneda seleccionada."
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponseGenerateReport'
+          description: successful operation
+        "400":
+          description: Invalid Request
+
+      summary: Permitirá generar una reporte diario por modelo de vehículo.
+      tags:
+        - Report
+      x-content-type: application/json
+      x-accepts: application/json
+      x-tags:
+        - tag: vehicle
+
+components:
+  schemas:
+
+    RequestGenerateQuote:
+      required:
+        - data
+      example:
+        data:
+          cryptocurrency: BTC
+          model: TUCSON
+      properties:
+        data:
+          $ref: '#/components/schemas/RequestGenerateQuote_data'
+
+    RequestGenerateQuote_data:
+      required:
+        - model
+        - cryptocurrency
+      properties:
+        model:
+          type: string
+          enum: [ACCENT, TUCSON, SANTA FE, GRAND i10]
+        cryptocurrency:
+          type: string
+      type: object
+
+    ResponseGenerateQuote:
+      example:
+        data:
+          convertionId: xxx-xxx-xxx-xxxx
+          versions:
+            - cryptocurrency: BTC
+              priceUsd: 35000
+              model: TUCSON
+              priceCryptocurrency: 1.6
+              version: TUCSON TL
+            - cryptocurrency: BTC
+              priceUsd: 35000
+              model: TUCSON
+              priceCryptocurrency: 1.6
+              version: TUCSON TL
+          conversionTimelife: 20 seconds
+      properties:
+        data:
+          $ref: '#/components/schemas/ResponseGenerateQuote_data'
+
+    ResponseGenerateQuote_data:
+      properties:
+        convertionId:
+          type: string
+        conversionTimelife:
+          type: string
+        versions:
+          items:
+            $ref: '#/components/schemas/ResponseGenerateQuote_data_versions_inner'
+          type: array
+      type: object
+
+    ResponseGenerateQuote_data_versions_inner:
+      required:
+        - model
+        - cryptocurrency
+        - version
+        - priceUsd
+        - priceCryptocurrency
+      properties:
+        model:
+          type: string
+        version:
+          type: string
+        priceUsd:
+          type: number
+        priceCryptocurrency:
+          type: number
+        cryptocurrency:
+          type: string
+      type: object
+
+    RequestSaveQuote:
+      required:
+        - data
+      example:
+        data:
+          cryptocurrency: BTC
+          convertionId: xxx-xxx-xxx-xxxx
+          fullName: Juan Perez
+          model: TUCSON
+          version: TUCSON TL
+      properties:
+        data:
+          $ref: '#/components/schemas/RequestSaveQuote_data'
+
+    RequestSaveQuote_data:
+      required:
+        - cryptocurrency
+        - convertionId
+        - fullName
+        - model
+        - version
+      properties:
+        convertionId:
+          type: string
+        fullName:
+          type: string
+        version:
+          type: string
+        model:
+          type: string
+        cryptocurrency:
+          type: string
+      type: object
+
+    ResponseSaveQuote:
+      example:
+        data:
+          cryptocurrency: BTC
+          date: 2023-06-02:12:01:45;
+          priceUsd: 25000
+          purchaseId: yyy-yyy-yyy-yyy
+          fullName: Juan Perez
+          model: TUCSON
+          priceCryptocurrency: 1
+          version: TUCSON TL
+      properties:
+        data:
+          $ref: '#/components/schemas/ResponseSaveQuote_data'
+
+    ResponseSaveQuote_data:
+      properties:
+        fullName:
+          type: string
+        version:
+          type: string
+        model:
+          type: string
+        cryptocurrency:
+          type: string
+        priceUsd:
+          type: number
+        priceCryptocurrency:
+          type: number
+        date:
+          type: string
+        purchaseId:
+          type: string
+      type: object
+
+    RequestGenerateReport:
+      required:
+        - data
+      example:
+        data:
+          date: 2023-06-02
+          model: TUCSON
+          cryptocurrency: BTC
+      properties:
+        data:
+          $ref: '#/components/schemas/RequestGenerateReport_data'
+
+    RequestGenerateReport_data:
+      required:
+        - date
+        - model
+        - cryptocurrency
+        - version
+      properties:
+        date:
+          type: string
+          pattern: "[0-9]{4}-[0-9]{2}-[0-9]{2}"
+        model:
+          type: string
+          enum: [ACCENT, TUCSON, SANTA FE, GRAND i10]
+        version:
+          type: string
+        cryptocurrency:
+          type: string
+      type: object
+
+    ResponseGenerateReport:
+      properties:
+        data:
+          $ref: '#/components/schemas/ResponseGenerateReport_data'
+
+    ResponseGenerateReport_data:
+      type: array
+      items:
+        properties:
+          date:
+            type: string
+          version:
+            type: string
+          model:
+            type: string
+          cryptocurrency:
+            type: string
+          usdAmount:
+            type: number
+          cryptocurrencyAmount:
+            type: number
+
+

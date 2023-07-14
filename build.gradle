@@ -1,0 +1,167 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.1.1'
+	id 'io.spring.dependency-management' version '1.1.0'
+	id "org.openapi.generator" version "6.6.0"
+	id "jacoco"
+	id "com.avast.gradle.docker-compose"  version "0.14.0"
+
+}
+
+apply plugin: 'org.openapi.generator'
+
+group = 'ec.pichincha.challenge'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	sourceCompatibility = '17'
+	targetCompatibility = '17'
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+ext {
+	set('springCloudVersion', "2022.0.3")
+	set('lombokMapstructBindingVersion', "0.2.0")
+}
+
+dependencies {
+	testImplementation 'org.projectlombok:lombok:1.18.26'
+	compileOnly 'org.mapstruct:mapstruct:1.5.5.Final', 'org.projectlombok:lombok' // Versión de MapStruct
+	annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final', 'org.projectlombok:lombok', "org.projectlombok:lombok-mapstruct-binding:${lombokMapstructBindingVersion}"
+	// Procesador de anotaciones de MapStruct
+	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
+	implementation 'org.mapstruct:mapstruct:1.5.5.Final'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	//circuit breaker
+	implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-reactor-resilience4j'
+	implementation 'org.springframework.boot:spring-boot-starter-aop'
+	//redis
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'
+	implementation 'org.springframework.boot:spring-boot-starter-cache'
+
+	implementation 'com.google.code.gson:gson:2.10.1'
+	//for use spring boot 3 with jakarta and open-api-generator
+	implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
+	implementation 'org.springdoc:springdoc-openapi-ui:1.6.9'
+	// https://mvnrepository.com/artifact/com.fasterxml.jackson.dataformat/jackson-dataformat-yaml
+	implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.15.2'
+
+	developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
+
+	//flyway
+	implementation 'org.flywaydb:flyway-core'
+
+	//r2dbc
+	implementation 'io.r2dbc:r2dbc-postgresql:0.8.13.RELEASE'
+	implementation 'org.postgresql:postgresql:42.6.0'
+
+	// JDBC Reactive
+	implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
+	implementation 'io.r2dbc:r2dbc-spi'
+
+
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'io.projectreactor:reactor-test'
+	testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.8.0'
+	testImplementation 'com.squareup.okhttp3:mockwebserver:4.9.1'
+
+
+}
+
+dependencyManagement {
+	imports {
+		mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+	}
+}
+
+task buildSpringServer(type: org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+	generatorName = "spring"
+	inputSpec = "$rootDir/src/main/resources/openapi.yaml".toString()
+	outputDir = "$buildDir/generated".toString()
+	apiPackage = "ec.pichincha.challenge.server"
+	modelPackage = "ec.pichincha.challenge.models"
+	configOptions = [
+			serializableModel                       : "true",
+			dateLibrary                             : "java8",
+			openApiNullable                         : "false",
+			reactive                                : "true",
+			delegatePattern                         : "true",
+			configPackage                           : "ec.pichincha.challenge.config",
+			sourceFolder                            : "src/main/java",
+			basePackage                             : "ec.pichincha.challenge",
+			disallowAdditionalPropertiesIfNotPresent: "false",
+			useJakartaEe: "true",
+			useSpringBoot3:"true",
+			documentationProvider:"source"
+
+
+	]
+}
+
+compileJava.dependsOn buildSpringServer
+
+sourceSets.main.java.srcDirs = ["$buildDir/generated/src/main/java", "src/main/java"]
+
+sourceSets {
+	test {
+		resources {
+			srcDirs = ['src/test/resources']
+		}
+	}
+}
+
+
+springBoot {
+	mainClass = 'ec.pichincha.challenge.OpenApiGeneratorApplication'
+}
+
+jacoco {
+	toolVersion = "0.8.7"
+}
+
+dockerCompose {
+	useComposeFiles.add("src/test/resources/test-compose.yaml")
+	isRequiredBy(tasks.test)
+}
+
+test {
+	classpath += sourceSets.test.runtimeClasspath
+	finalizedBy jacocoTestReport
+}
+
+jacocoTestReport {
+
+	afterEvaluate {
+		classDirectories.setFrom(files(classDirectories.files.collect {
+			fileTree(dir: it, exclude: [
+					"ec/pichincha/challenge/server",
+					"ec/pichincha/challenge/models/*",
+					"ec/pichincha/challenge/infraestructure/adapter/out/external/models/dto/*",
+					"ec/pichincha/challenge/infraestructure/adapter/out/external/coinlore/dto/*",
+					"ec/pichincha/challenge/infraestructure/adapter/out/external/livecoin/dto/*",
+					"ec/pichincha/challenge/infraestructure/adapter/out/cache/entity"
+			])
+		}))
+	}
+	reports {
+		html.required.set(true)
+		html.destination file("${buildDir}/jacoco/index")
+	}
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
+
+
