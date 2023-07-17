@@ -2,6 +2,8 @@ version: '3.8'
 services:
   redis:
     image: "redis/redis-stack:latest"
+    depends_on:
+      - flyway
     ports:
       - "26379:6379"
     container_name : redis-tmp
@@ -13,18 +15,26 @@ services:
   database:
     image: 'postgres:15.2'
     ports:
-      - '25432:5432'
+      - '25432:5432/tcp'
     container_name : database-tmp
+    hostname: database-tmp
     networks:
       - vehicle
     environment:
-      - 'POSTGRES_USER=myuser'
-      - 'POSTGRES_DB=mydatabase'
-      - 'POSTGRES_PASSWORD=secret'
+      - POSTGRES_USER=myuser
+      - POSTGRES_DB=mydatabase
+      - POSTGRES_PASSWORD=secret
+      - TZ=America/Guayaquil
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U myuser" ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
   flyway:
     image: flyway/flyway:latest
     depends_on:
-      - database
+      database:
+          condition: service_healthy
     networks:
       - vehicle
     volumes:
